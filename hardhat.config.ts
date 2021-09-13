@@ -1,4 +1,5 @@
 import "@nomiclabs/hardhat-waffle";
+import "@nomiclabs/hardhat-etherscan";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
@@ -22,6 +23,7 @@ const chainIds = {
   mainnet: 1,
   rinkeby: 4,
   ropsten: 3,
+  "arbitrum-rinkeby": 421611,
 };
 
 // Ensure that we have all the environment variables we need.
@@ -33,6 +35,11 @@ if (!mnemonic) {
 const infuraApiKey: string | undefined = process.env.INFURA_API_KEY;
 if (!infuraApiKey) {
   throw new Error("Please set your INFURA_API_KEY in a .env file");
+}
+
+const etherscanApiKey: string | undefined = process.env.ETHERSCAN_API_KEY;
+if (!etherscanApiKey) {
+  throw new Error("Please set your ETHERSCAN_API_KEY in a .env file");
 }
 
 function getChainConfig(network: keyof typeof chainIds): NetworkUserConfig {
@@ -67,6 +74,7 @@ const config: HardhatUserConfig = {
     kovan: getChainConfig("kovan"),
     rinkeby: getChainConfig("rinkeby"),
     ropsten: getChainConfig("ropsten"),
+    arbitrumRinkeby: getChainConfig("arbitrum-rinkeby"),
   },
   paths: {
     artifacts: "./artifacts",
@@ -92,11 +100,30 @@ const config: HardhatUserConfig = {
           },
         },
       },
+      {
+        version: "0.8.4",
+        settings: {
+          metadata: {
+            // Not including the metadata hash
+            // https://github.com/paulrberg/solidity-template/issues/31
+            bytecodeHash: "none",
+          },
+          // Disable the optimizer when debugging
+          // https://hardhat.org/hardhat-network/#solidity-optimizer-support
+          optimizer: {
+            enabled: true,
+            runs: 800,
+          },
+        },
+      },
     ],
   },
   typechain: {
     outDir: "typechain",
     target: "ethers-v5",
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY,
   },
 };
 
