@@ -1,3 +1,3 @@
 import "./greeter";
-import "./master-chef-token";
+import "./master-chef";
 import "./multicall";

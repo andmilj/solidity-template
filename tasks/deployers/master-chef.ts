@@ -1,7 +1,7 @@
 import { task } from "hardhat/config";
 import { TaskArguments } from "hardhat/types";
 
-import { MasterChefToken, MasterChefToken__factory, MasterChefV2, MasterChefV2__factory } from "../../typechain";
+import { MasterChefToken, MasterChefToken__factory, MasterChef, MasterChef__factory } from "../../typechain";
 
 task("deploy:MaterChef").setAction(async function (taskArguments: TaskArguments, { ethers }) {
   const tokenFactory: MasterChefToken__factory = await ethers.getContractFactory("MasterChefToken");
@@ -9,14 +9,14 @@ task("deploy:MaterChef").setAction(async function (taskArguments: TaskArguments,
   await tokenContract.deployed();
   console.log("MaterChefToken deployed to: ", tokenContract.address);
 
-  const farmFactory: MasterChefV2__factory = await ethers.getContractFactory("MasterChefV2");
-  const farmContract: MasterChefV2 = <MasterChefV2>(
+  const farmFactory: MasterChef__factory = await ethers.getContractFactory("MasterChef");
+  const farmContract: MasterChef = <MasterChef>(
     await farmFactory.deploy(
       tokenContract.address,
       "0x67f780ca67865c48100F3d633f0F148242eEf2A6",
       "0x67f780ca67865c48100F3d633f0F148242eEf2A6",
-      20,
-      11023289,
+      "100000000000000000",
+      9298000,
     )
   );
 
@@ -24,5 +24,5 @@ task("deploy:MaterChef").setAction(async function (taskArguments: TaskArguments,
   console.log("MaterChef deployed to: ", farmContract.address);
 });
 
-// npx hardhat verify --network rinkeby "0x19233ACF3C0558b91D85993B525E6e7C406F0366" 10000
-// npx hardhat verify --network rinkeby "0x0964fbe042c6E21e7B970536b10C299516A1c97b" "0x19233ACF3C0558b91D85993B525E6e7C406F0366" "0x67f780ca67865c48100F3d633f0F148242eEf2A6" "0x67f780ca67865c48100F3d633f0F148242eEf2A6" 20 11023289
+// npx hardhat verify --network rinkeby "0xcCeac8394C9e0DB97d929F47eff77619dd2E5388" 10000
+// npx hardhat verify --network rinkeby "0xB6f85d26D9Bf34684970D8e4Ed65De03099838BF" "0xcCeac8394C9e0DB97d929F47eff77619dd2E5388" "0x67f780ca67865c48100F3d633f0F148242eEf2A6" "0x67f780ca67865c48100F3d633f0F148242eEf2A6" 100000000000000000 9298000

@@ -16,7 +16,7 @@ import "./MasterChefToken.sol";
 // distributed and the community can show to govern itself.
 //
 // Have fun reading it. Hopefully it's bug-free. God bless.
-contract MasterChefV2 is Ownable, ReentrancyGuard {
+contract MasterChef is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
