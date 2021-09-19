@@ -1046,6 +1046,7 @@ __metadata:
     ts-node: ^10.2.1
     typechain: ^5.1.2
     typescript: ^4.4.2
+    web3: ^1.5.2
   languageName: unknown
   linkType: soft
 
@@ -14651,7 +14652,7 @@ typescript@^4.4.2:
   languageName: node
   linkType: hard
 
-"web3@npm:1.5.2":
+"web3@npm:1.5.2, web3@npm:^1.5.2":
   version: 1.5.2
   resolution: "web3@npm:1.5.2"
   dependencies:

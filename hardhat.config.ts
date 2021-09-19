@@ -7,6 +7,7 @@ import "solidity-coverage";
 import "./tasks/accounts";
 import "./tasks/clean";
 import "./tasks/deployers";
+import "./tasks/encode-data";
 
 import { resolve } from "path";
 
@@ -102,6 +103,22 @@ const config: HardhatUserConfig = {
       },
       {
         version: "0.8.4",
+        settings: {
+          metadata: {
+            // Not including the metadata hash
+            // https://github.com/paulrberg/solidity-template/issues/31
+            bytecodeHash: "none",
+          },
+          // Disable the optimizer when debugging
+          // https://hardhat.org/hardhat-network/#solidity-optimizer-support
+          optimizer: {
+            enabled: true,
+            runs: 800,
+          },
+        },
+      },
+      {
+        version: "0.6.12",
         settings: {
           metadata: {
             // Not including the metadata hash
