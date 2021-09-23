@@ -4,17 +4,19 @@ import { TaskArguments } from "hardhat/types";
 import {
   MasterChefToken,
   MasterChefToken__factory,
-  MasterChef,
-  MasterChef__factory,
+  // MasterChef,
+  // MasterChef__factory,
   Timelock__factory,
   Timelock,
 } from "../../typechain";
+import { MasterChefAdvanced__factory } from "../../typechain/factories/MasterChefAdvanced__factory";
+import { MasterChefAdvanced } from "../../typechain/MasterChefAdvanced";
 
 const WALLET_ADDRESS = "0x36C96C3eBFD674484B17998CEe64615c6601B43D";
 const DEV_ADDRESS = "0x67f780ca67865c48100F3d633f0F148242eEf2A6";
 const FEE_ADDRESS = "0x67f780ca67865c48100F3d633f0F148242eEf2A6";
 
-const FARMING_START_BLOCK = 9298000;
+const FARMING_START_BLOCK = 13358340;
 const TOKEN_EMISSION_PER_BLOCK = "100000000000000000";
 
 task("deploy:MasterChef").setAction(async function (taskArguments: TaskArguments, { ethers }) {
@@ -26,8 +28,8 @@ task("deploy:MasterChef").setAction(async function (taskArguments: TaskArguments
   const mintResult = await tokenContract.mint(WALLET_ADDRESS, "4000000000000000000000");
   console.log("Token minted", mintResult.blockHash);
 
-  const farmFactory: MasterChef__factory = await ethers.getContractFactory("MasterChef");
-  const farmContract: MasterChef = <MasterChef>(
+  const farmFactory: MasterChefAdvanced__factory = await ethers.getContractFactory("MasterChefAdvanced");
+  const farmContract: MasterChefAdvanced = <MasterChefAdvanced>(
     await farmFactory.deploy(
       tokenContract.address,
       DEV_ADDRESS,
@@ -57,15 +59,15 @@ task("deploy:MasterChef").setAction(async function (taskArguments: TaskArguments
   console.log(`npx hardhat verify --network rinkeby ${timelockContract.address} ${WALLET_ADDRESS} 60`);
 
   //----------------------------- custom should be removed
-  await farmContract.add(4000, "0x95094111946f91381d7d4c933acbe35dd88f8d0e", 500, true);
-  await farmContract.transferOwnership(timelockContract.address);
-  await timelockContract.queueTransaction(
-    farmContract.address,
-    0,
-    "set(uint256,uint256,uint16,bool)",
-    "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000138800000000000000000000000000000000000000000000000000000000000002580000000000000000000000000000000000000000000000000000000000000001",
-    1632069355,
-  );
+  // await farmContract.add(4000, "0x95094111946f91381d7d4c933acbe35dd88f8d0e", 500, true);
+  // await farmContract.transferOwnership(timelockContract.address);
+  // await timelockContract.queueTransaction(
+  //   farmContract.address,
+  //   0,
+  //   "set(uint256,uint256,uint16,bool)",
+  //   "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000138800000000000000000000000000000000000000000000000000000000000002580000000000000000000000000000000000000000000000000000000000000001",
+  //   1632069355,
+  // );
 });
 
 // npx hardhat verify --network rinkeby "0xcCeac8394C9e0DB97d929F47eff77619dd2E5388" 10000
