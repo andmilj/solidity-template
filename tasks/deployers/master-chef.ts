@@ -19,6 +19,8 @@ const FEE_ADDRESS = "0x67f780ca67865c48100F3d633f0F148242eEf2A6";
 const FARMING_START_BLOCK = 13358340;
 const TOKEN_EMISSION_PER_BLOCK = "100000000000000000";
 
+const TIMELOCK = 3 * 60 * 60;
+
 task("deploy:MasterChef").setAction(async function (taskArguments: TaskArguments, { ethers }) {
   const tokenFactory: MasterChefToken__factory = await ethers.getContractFactory("MasterChefToken");
   const tokenContract: MasterChefToken = <MasterChefToken>await tokenFactory.deploy(0);
@@ -46,7 +48,7 @@ task("deploy:MasterChef").setAction(async function (taskArguments: TaskArguments
   console.log("Token Ownership transferred to Mastershef", tokenTransferOwnershipResult.blockHash);
 
   const factory: Timelock__factory = await ethers.getContractFactory("Timelock");
-  const timelockContract: Timelock = <Timelock>await factory.deploy(WALLET_ADDRESS, 60);
+  const timelockContract: Timelock = <Timelock>await factory.deploy(WALLET_ADDRESS, TIMELOCK);
   await timelockContract.deployed();
   console.log("Timelock deployed to: ", timelockContract.address);
 
@@ -56,7 +58,7 @@ task("deploy:MasterChef").setAction(async function (taskArguments: TaskArguments
   console.log(
     `npx hardhat verify --network rinkeby ${farmContract.address} "${tokenContract.address}" "${DEV_ADDRESS}" "${FEE_ADDRESS}" ${TOKEN_EMISSION_PER_BLOCK} ${FARMING_START_BLOCK}`,
   );
-  console.log(`npx hardhat verify --network rinkeby ${timelockContract.address} ${WALLET_ADDRESS} 60`);
+  console.log(`npx hardhat verify --network rinkeby ${timelockContract.address} ${WALLET_ADDRESS} ${TIMELOCK}`);
 
   //----------------------------- custom should be removed
   // await farmContract.add(4000, "0x95094111946f91381d7d4c933acbe35dd88f8d0e", 500, true);

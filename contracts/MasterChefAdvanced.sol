@@ -8,7 +8,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-import "./MasterChefToken.sol";
+interface IKafeToken is IERC20 {
+    function mint(address to, uint256 amt) external;
+}
 
 contract MasterChefAdvanced is Ownable, ReentrancyGuard {
     using SafeMath for uint256;
@@ -23,20 +25,20 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
     // Info of each pool.
     struct PoolInfo {
         IERC20 lpToken; // Address of LP token contract.
-        uint256 allocPoint; // How many allocation points assigned to this pool. CUSTOM TOKENs to distribute per block.
-        uint256 lastRewardBlock; // Last block number that CUSTOM TOKENs distribution occurs.
-        uint256 accTokenPerShare; // Accumulated CUSTOM TOKENs per share, times 1e12. See below.
+        uint256 allocPoint; // How many allocation points assigned to this pool. EGGs to distribute per block.
+        uint256 lastRewardBlock; // Last block number that EGGs distribution occurs.
+        uint256 accKafePerShare; // Accumulated EGGs per share, times 1e12. See below.
         uint16 depositFeeBP; // Deposit fee in basis points
     }
 
-    // The CUSTOM TOKEN TOKEN!
-    MasterChefToken public token;
+    // The EGG TOKEN!
+    IKafeToken public kafe;
     // Dev address.
     address public devaddr;
     uint256 public constant DEV_FEE_DIVIDER = 10;
-    // CUSTOM TOKEN tokens created per block.
-    uint256 public tokenPerBlock;
-    // Bonus muliplier for early token makers.
+    // EGG tokens created per block.
+    uint256 public kafePerBlock;
+    // Bonus muliplier for early kafe makers.
     uint256 public constant BONUS_MULTIPLIER = 1;
     // Deposit Fee address
     address public feeAddress;
@@ -47,13 +49,12 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
     mapping(uint256 => mapping(address => UserInfo)) public userInfo;
     // Total allocation points. Must be the sum of all allocation points in all pools.
     uint256 public totalAllocPoint = 0;
-    // The block number when CUSTOM TOKEN mining starts.
+    // The block number when EGG mining starts.
     uint256 public startBlock;
-    uint256 public depositedToken;
+    uint256 public depositedKafe;
 
     uint256[] public rewardMultipliers = [100, 75, 56, 42, 40];
-    // 12secs per block. - represents number of blocks in each index of multiplier
-    uint256 public rewardTimePerMultiplierTier = 24 hours / 12;
+    uint256 public rewardTimePerMultiplierTier = 24 hours / 12; // 12secs per block. - represents number of blocks in each index of multiplier
     bool public masterChefCircuitBreak = false;
 
     mapping(address => mapping(uint256 => uint256)) public feeFactor;
@@ -67,19 +68,18 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
     event SetFeeAddress(address indexed user, address indexed newAddress);
     event SetDevAddress(address indexed user, address indexed newAddress);
     event UpdateEmissionRate(address indexed user, uint256 goosePerBlock);
-    event UpdateStartBlock(uint256 indexed startBlock);
 
     constructor(
-        MasterChefToken _token,
+        IKafeToken _kafe,
         address _devaddr,
         address _feeAddress,
-        uint256 _tokenPerBlock,
+        uint256 _kafePerBlock,
         uint256 _startBlock
     ) public {
-        token = _token;
+        kafe = _kafe;
         devaddr = _devaddr;
         feeAddress = _feeAddress;
-        tokenPerBlock = _tokenPerBlock;
+        kafePerBlock = _kafePerBlock;
         startBlock = _startBlock;
     }
 
@@ -140,14 +140,14 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
                 lpToken: _lpToken,
                 allocPoint: _allocPoint,
                 lastRewardBlock: lastRewardBlock,
-                accTokenPerShare: 0,
+                accKafePerShare: 0,
                 depositFeeBP: _depositFeeBP
             })
         );
         // 100 = 1%
     }
 
-    // Update the given pool's CUSTOM TOKEN allocation point and deposit fee. Can only be called by the owner.
+    // Update the given pool's EGG allocation point and deposit fee. Can only be called by the owner.
     function set(
         uint256 _pid,
         uint256 _allocPoint,
@@ -168,21 +168,21 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
     //     return _to.sub(_from).mul(BONUS_MULTIPLIER);
     // }
 
-    // View function to see pending CUSTOM TOKENs on frontend.
-    function pendingToken(uint256 _pid, address _user) external view returns (uint256) {
+    // View function to see pending EGGs on frontend.
+    function pendingKafe(uint256 _pid, address _user) external view returns (uint256) {
         PoolInfo storage pool = poolInfo[_pid];
         UserInfo storage user = userInfo[_pid][_user];
-        uint256 accTokenPerShare = pool.accTokenPerShare;
+        uint256 accKafePerShare = pool.accKafePerShare;
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (_pid == 0) {
-            lpSupply = depositedToken;
+            lpSupply = depositedKafe;
         }
         if (block.number > pool.lastRewardBlock && lpSupply != 0) {
             uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-            uint256 tokenReward = multiplier.mul(tokenPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-            accTokenPerShare = accTokenPerShare.add(tokenReward.mul(1e12).div(lpSupply));
+            uint256 kafeReward = multiplier.mul(kafePerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+            accKafePerShare = accKafePerShare.add(kafeReward.mul(1e12).div(lpSupply));
         }
-        return user.amount.mul(accTokenPerShare).div(1e12).sub(user.rewardDebt);
+        return user.amount.mul(accKafePerShare).div(1e12).sub(user.rewardDebt);
     }
 
     // Update reward variables for all pools. Be careful of gas spending!
@@ -201,29 +201,29 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
         }
         uint256 lpSupply = pool.lpToken.balanceOf(address(this));
         if (_pid == 0) {
-            lpSupply = depositedToken;
+            lpSupply = depositedKafe;
         }
         if (lpSupply == 0 || pool.allocPoint == 0) {
             pool.lastRewardBlock = block.number;
             return;
         }
         uint256 multiplier = getMultiplier(pool.lastRewardBlock, block.number);
-        uint256 tokenReward = multiplier.mul(tokenPerBlock).mul(pool.allocPoint).div(totalAllocPoint);
-        token.mint(devaddr, tokenReward.div(DEV_FEE_DIVIDER));
-        token.mint(address(this), tokenReward);
-        pool.accTokenPerShare = pool.accTokenPerShare.add(tokenReward.mul(1e12).div(lpSupply));
+        uint256 kafeReward = multiplier.mul(kafePerBlock).mul(pool.allocPoint).div(totalAllocPoint);
+        kafe.mint(devaddr, kafeReward.div(DEV_FEE_DIVIDER));
+        kafe.mint(address(this), kafeReward);
+        pool.accKafePerShare = pool.accKafePerShare.add(kafeReward.mul(1e12).div(lpSupply));
         pool.lastRewardBlock = block.number;
     }
 
-    // // Deposit LP tokens to MasterChef for CUSTOM TOKEN allocation.
+    // // Deposit LP tokens to MasterChef for EGG allocation.
     // function deposit(uint256 _pid, uint256 _amount) public nonReentrant {
     //     PoolInfo storage pool = poolInfo[_pid];
     //     UserInfo storage user = userInfo[_pid][msg.sender];
     //     updatePool(_pid);
     //     if (user.amount > 0) {
-    //         uint256 pending = user.amount.mul(pool.accTokenPerShare).div(1e12).sub(user.rewardDebt);
+    //         uint256 pending = user.amount.mul(pool.accKafePerShare).div(1e12).sub(user.rewardDebt);
     //         if (pending > 0) {
-    //             safeTokenTransfer(msg.sender, pending);
+    //             safeKafeTransfer(msg.sender, pending);
     //         }
     //     }
     //     if (_amount > 0) {
@@ -236,7 +236,7 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
     //             user.amount = user.amount.add(_amount);
     //         }
     //     }
-    //     user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e12);
+    //     user.rewardDebt = user.amount.mul(pool.accKafePerShare).div(1e12);
     //     emit Deposit(msg.sender, _pid, _amount);
     // }
 
@@ -245,9 +245,9 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
         UserInfo storage user = userInfo[_pid][msg.sender];
         updatePool(_pid);
         if (user.amount > 0) {
-            uint256 pending = user.amount.mul(pool.accTokenPerShare).div(1e12).sub(user.rewardDebt);
+            uint256 pending = user.amount.mul(pool.accKafePerShare).div(1e12).sub(user.rewardDebt);
             if (pending > 0) {
-                safeTokenTransfer(msg.sender, pending);
+                safeKafeTransfer(msg.sender, pending);
             }
         }
         // prevent double hop for deposit fee
@@ -272,10 +272,10 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
 
             user.amount = user.amount.add(actualDepAmt);
             if (_pid == 0) {
-                depositedToken = depositedToken.add(actualDepAmt);
+                depositedKafe = depositedKafe.add(actualDepAmt);
             }
         }
-        user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accKafePerShare).div(1e12);
         emit Deposit(msg.sender, _pid, actualDepAmt);
     }
 
@@ -285,18 +285,18 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
         UserInfo storage user = userInfo[_pid][msg.sender];
         require(user.amount >= _amount, "withdraw: not good");
         updatePool(_pid);
-        uint256 pending = user.amount.mul(pool.accTokenPerShare).div(1e12).sub(user.rewardDebt);
+        uint256 pending = user.amount.mul(pool.accKafePerShare).div(1e12).sub(user.rewardDebt);
         if (pending > 0) {
-            safeTokenTransfer(msg.sender, pending);
+            safeKafeTransfer(msg.sender, pending);
         }
         if (_amount > 0) {
             user.amount = user.amount.sub(_amount);
             pool.lpToken.safeTransfer(address(msg.sender), _amount);
             if (_pid == 0) {
-                depositedToken = depositedToken.sub(_amount);
+                depositedKafe = depositedKafe.sub(_amount);
             }
         }
-        user.rewardDebt = user.amount.mul(pool.accTokenPerShare).div(1e12);
+        user.rewardDebt = user.amount.mul(pool.accKafePerShare).div(1e12);
         emit Withdraw(msg.sender, _pid, _amount);
     }
 
@@ -311,16 +311,16 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
         emit EmergencyWithdraw(msg.sender, _pid, amount);
     }
 
-    // Safe token transfer function, just in case if rounding error causes pool to not have enough CUSTOM TOKENs.
-    function safeTokenTransfer(address _to, uint256 _amount) internal {
-        uint256 tokenBal = token.balanceOf(address(this));
+    // Safe kafe transfer function, just in case if rounding error causes pool to not have enough EGGs.
+    function safeKafeTransfer(address _to, uint256 _amount) internal {
+        uint256 kafeBal = kafe.balanceOf(address(this));
         bool transferSuccess = false;
-        if (_amount > tokenBal) {
-            transferSuccess = token.transfer(_to, tokenBal);
+        if (_amount > kafeBal) {
+            transferSuccess = kafe.transfer(_to, kafeBal);
         } else {
-            transferSuccess = token.transfer(_to, _amount);
+            transferSuccess = kafe.transfer(_to, _amount);
         }
-        require(transferSuccess, "safeTokenTransfer: transfer failed");
+        require(transferSuccess, "safeKafeTransfer: transfer failed");
     }
 
     // Update dev address by the previous dev.
@@ -336,12 +336,11 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
         emit SetFeeAddress(msg.sender, _feeAddress);
     }
 
-    //Pancake has to add hidden dummy pools inorder to alter the emission,
-    // here we make it simple and transparent to all.
-    function updateEmissionRate(uint256 _tokenPerBlock) public onlyOwner {
+    //Pancake has to add hidden dummy pools inorder to alter the emission, here we make it simple and transparent to all.
+    function updateEmissionRate(uint256 _kafePerBlock) public onlyOwner {
         massUpdatePools();
-        tokenPerBlock = _tokenPerBlock;
-        emit UpdateEmissionRate(msg.sender, _tokenPerBlock);
+        kafePerBlock = _kafePerBlock;
+        emit UpdateEmissionRate(msg.sender, _kafePerBlock);
     }
 
     // helpers
@@ -422,18 +421,5 @@ contract MasterChefAdvanced is Ownable, ReentrancyGuard {
         sum = sum.sub((endOfLastTier.sub(_to)).mul(_getMultiplierByTier(endTier)));
 
         return sum;
-    }
-
-    function updateStartBlock(uint256 _newStartBlock) external onlyOwner {
-        require(block.number < startBlock, "cannot change start block if farm has already started");
-        require(block.number < _newStartBlock, "cannot set start block in the past");
-        uint256 length = poolInfo.length;
-        for (uint256 pid = 0; pid < length; ++pid) {
-            PoolInfo storage pool = poolInfo[pid];
-            pool.lastRewardBlock = _newStartBlock;
-        }
-        startBlock = _newStartBlock;
-
-        emit UpdateStartBlock(startBlock);
     }
 }
